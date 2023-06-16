@@ -1,6 +1,6 @@
 <h1 align='center'>Curso Teknisa Estágio 2023 </h1>
 
-### Conteúdos abordado durando a semana de curso: 
+<h3 align='center'> Conteúdos abordado durando a semana de curso: </h3>
 
 *1° - SCRUM e Boas práticas na programação:*           
        
