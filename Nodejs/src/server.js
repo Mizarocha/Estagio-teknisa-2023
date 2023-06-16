@@ -13,7 +13,7 @@ app.get("/syncDatabase", async (req, res) => {
   try {
     await database.sync();
 
-    res.send("Database successfully sync");
+    res.send(`Database successfully sync 'ed`);
   } catch (error) {
     res.send(error);
   }
@@ -25,17 +25,7 @@ app.post("/createProgrammer", async (req, res) => {
 
     const properties = [" name", "javascript", "java", "python"];
 
-    const check = properties.every((property) => {
-      return property in params;
-    });
-
-    if (!check) {
-      const propStr = properties.join(",");
-      res.send(
-        `All parameter needed to create a programmer must be sent: ${propStr}`
-      );
-      return;
-    }
+    validateProperties(properties, params, "every");
 
     const newProgrammer = await programmer.create({
       name: params.name,
@@ -50,17 +40,98 @@ app.post("/createProgrammer", async (req, res) => {
   }
 });
 
-app.delete("/deleteProgrammer", async (req, res) => {
+app.get("./retrieveProgrammer", async (req, res) => {
   try {
     const params = req.body;
 
-    if (!("id" in params)) {
-      res.send(`Missing  'id' in`);
+    if ("id" in params) {
+      const record = await programmer.findByPk(params.id);
+
+      if (record) {
+        res.send(`No programmer found using received ID`);
+      }
+      return;
     }
+
+    const records = await programmer.findAll();
+
+    res.send(records);
   } catch (error) {
     res.send(error);
   }
 });
+
+app.put("/updateProgrammer", async (req, res) => {
+  try {
+    const params = req.body;
+
+    const record = await validateID(params);
+
+    const properties = [" name", "javascript", "java", "python"];
+
+    validateProperties(properties, params, "some");
+
+    record.name = params.name || record.name;
+    record.javascript = params.javascript || record.javascript;
+    record.java = params.java || record.java;
+    record.python = params.python || record.python;
+
+    await record.save();
+
+    res.send(`${record.id} ${record.name} - Update successfully`);
+  } catch (error) {
+    res.send(error);
+  }
+});
+
+app.delete("/deleteProgrammer", async (req, res) => {
+  try {
+    const params = req.body;
+
+    const record = await validateID(params);
+
+    record.destroy();
+
+    res.send(`${record.id} ${record.name} - Deleted successfully`);
+  } catch (error) {
+    res.send(error);
+  }
+});
+
+const validateID = async (params) => {
+  try {
+    if (!"id" in params) {
+      throw `Missing 'id' in request body`;
+    }
+
+    const record = await programmer.findByPk(params.id);
+
+    if (!record) {
+      throw `Programmer ID not found.`;
+    }
+
+    return record;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const validateProperties = (properties, params, fn) => {
+  try {
+    const check = properties[fn]((property) => {
+      return property in params;
+    });
+
+    if (!check) {
+      const propStr = properties.join(",");
+      throw `Request body doesnt't have any of the following properties: ${propStr}`;
+    }
+
+    return true;
+  } catch (error) {
+    throw error;
+  }
+};
 
 app.listen(port, () => {
   console.log(`now listening on port ${port}`);
